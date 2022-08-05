@@ -1,0 +1,8 @@
+<?php
+
+function at_frontpage_per_language_config_schema_info_alter(&$definitions) {
+  // Change the front page type to label so that it can be translated.
+  $definitions['system.site']['mapping']['page']['mapping']['front']['type'] = 'label';
+  $definitions['system.site']['mapping']['page']['mapping']['404']['type'] = 'label';
+  $definitions['system.site']['mapping']['page']['mapping']['403']['type'] = 'label';
+}

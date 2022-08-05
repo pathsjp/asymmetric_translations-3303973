@@ -1,0 +1,18 @@
+
+.asymmetric-translations--container {
+  border: 2px solid #d0d0d0;
+  background: #f0f0f0;
+  padding: 2em;
+  margin-bottom: 2em;
+}
+
+.asymmetric-translations--container--warning {
+  border-color: red;
+  background: #fff0f0;
+}
+
+.asymmetric-translations--table-row--warning {
+  border: 2px solid #d0d0d0;
+  border-color: red;
+  background: #fff0f0;
+}

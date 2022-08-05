@@ -1,0 +1,5 @@
+entity.asymmetric_node_translation.collection:
+  title: 'Asymmetric node translations'
+  parent: system.admin_content
+  description: 'Asymmetric node translations.'
+  route_name: entity.asymmetric_node_translation.collection

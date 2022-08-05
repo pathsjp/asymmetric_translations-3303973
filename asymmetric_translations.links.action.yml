@@ -1,0 +1,5 @@
+asymmetric_node_translation.add_form:
+  route_name: entity.asymmetric_node_translation.add_form
+  title: 'Add asymmetric node translation'
+  appears_on:
+    - entity.asymmetric_node_translation.collection

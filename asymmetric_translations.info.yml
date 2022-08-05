@@ -1,0 +1,10 @@
+name: Asymmetric Translations
+type: module
+description: 'Provides a asymmetric translation capabilities.'
+package: Asymmetric Translations
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - node
+  - content_translation
+  - quick_node_clone

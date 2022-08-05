@@ -1,0 +1,18 @@
+entity.asymmetric_node_translation.view:
+  title: View
+  route_name: entity.asymmetric_node_translation.canonical
+  base_route: entity.asymmetric_node_translation.canonical
+entity.asymmetric_node_translation.edit_form:
+  title: Edit
+  route_name: entity.asymmetric_node_translation.edit_form
+  base_route: entity.asymmetric_node_translation.canonical
+entity.asymmetric_node_translation.delete_form:
+  title: Delete
+  route_name: entity.asymmetric_node_translation.delete_form
+  base_route: entity.asymmetric_node_translation.canonical
+  weight: 10
+entity.asymmetric_node_translation.collection:
+  title: Asymmetric Node Translation
+  route_name: entity.asymmetric_node_translation.collection
+  base_route: system.admin_content
+  weight: 10

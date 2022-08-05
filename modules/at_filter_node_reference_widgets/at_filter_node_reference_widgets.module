@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * Implements hook_field_widget_form_alter().
+ * TODO: Also automate this process for node reference fields (currently done by hand)
+ * TODO: Add the entity_reference_by_language view config to the installation of this module
+ */
+function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
+  $widget_type = $context['widget']->getPluginId();
+  if ($widget_type !== 'link_default' && $widget_type !== 'link_attributes' && $widget_type !== 'link_target_field_widget') {
+    return;
+  }
+
+  $fieldDefinitions = $context['items']->getFieldDefinition();
+  if (!$fieldDefinitions) {
+    return;
+  }
+
+  if (!isset($element['uri']['#target_type'])) {
+    return;
+  }
+
+  if ($element['uri']['#target_type'] === 'node') {
+    $element['uri']['#selection_handler'] = 'views';
+    $element['uri']['#selection_settings'] = [
+      'view' => [
+        'view_name' => 'entity_reference_by_language',
+        'display_name' => 'all',
+      ],
+    ];
+  }
+}
+
+

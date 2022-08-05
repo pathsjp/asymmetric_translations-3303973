@@ -1,0 +1,6 @@
+services:
+  asymmetric_translations.content_translation_overview:
+    class: Drupal\asymmetric_translations\EventSubscriber\ControllerAlterSubscriber
+    arguments: [ ]
+    tags:
+      - { name: event_subscriber }

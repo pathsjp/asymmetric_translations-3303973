@@ -1,0 +1,6 @@
+services:
+  at_auto_fix_entity_references.auto_fix_node_references:
+    class: Drupal\at_auto_fix_entity_references\EventSubscriber\AutoFixNodeReferences
+    arguments: [ ]
+    tags:
+      - { name: event_subscriber }

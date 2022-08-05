@@ -1,0 +1,213 @@
+<?php
+
+use Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation;
+use Drupal\asymmetric_translations\Event;
+use Drupal\node\Entity\Node;
+
+/**
+ * Implements hook_entity_type_alter().
+ *
+ * @param array $entity_types
+ */
+function asymmetric_translations_entity_type_alter(array &$entity_types) {
+  // Add validation constraint to the node entity
+  $entity_types['node']->addConstraint('NodeAsymmetricTranslationLanguage');
+}
+
+function asymmetric_translations_language_switch_links_alter(array &$links, $type, \Drupal\Core\Url $url) {
+  if (!$node = \Drupal::routeMatch()->getParameter('node')) {
+    return;
+  }
+
+  if (is_numeric($node)) {
+    $node = Node::load($node);
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+
+  /* @var $ant \Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation */
+  if (!$ant = $storage->getTranslationEntityByNode($node)) {
+    return;
+  }
+
+  foreach ($links as $langcode => $link) {
+    /**
+     * If the current route is not a node or the node does not have this specific translation,
+     * point the language switcher to home instead
+     */
+    if ($ant->hasTranslation($langcode)) {
+      $links[$langcode]['url'] = $ant->getTranslation($langcode)->getNode()->toUrl();
+    }
+  }
+}
+
+/**
+ * Generate alternate language links for asymmetric translations.
+ * We do not check which language links already exist, but simply add the ones we know of, because at this point
+ * we should be able to expect that a node doesn't have "normal" translations.
+ *
+ * @param array $page
+ * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+ * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+ * @throws \Drupal\Core\Entity\EntityMalformedException
+ */
+function asymmetric_translations_page_attachments_alter(array &$page) {
+  if (!$node = \Drupal::routeMatch()->getParameter('node')) {
+    return;
+  }
+
+  if (is_numeric($node)) {
+    $node = Node::load($node);
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+
+  /* @var $ant \Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation */
+  if (!$ant = $storage->getTranslationEntityByNode($node)) {
+    return;
+  }
+
+  foreach($ant->getTranslationLanguages(TRUE) as $language) {
+    if ($language->getId() === \Drupal::languageManager()->getCurrentLanguage()->getId()) {
+      continue;
+    }
+    if (!$translation = $ant->getTranslation($language->getId())) {
+      continue;
+    }
+    if (!$node = $translation->getNode()) {
+      continue;
+    }
+
+    $page['#attached']['html_head_link'][] = [
+      ['rel' => 'alternate', 'hreflang' => $language->getId(), 'href' => $node->toUrl()->toString()]
+    ];
+  }
+}
+
+/**
+ * Called when a node is cloned.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The node being cloned.
+ */
+function asymmetric_translations_cloned_node_alter(\Drupal\node\NodeInterface $node) {
+  if (!$language = \Drupal::request()->query->get('clone_for_translation')) {
+    return;
+  }
+
+  $node->set('langcode', $language);
+  $node->at_source_node = \Drupal::routeMatch()->getParameter('node');
+
+  $event_dispatcher = \Drupal::service('event_dispatcher');
+  $event_dispatcher->dispatch(new Event\NodeClonedEvent($node, $node->language()), Event\NodeClonedEvent::EVENT_NAME);
+}
+
+/**
+ * Called when a node is saved.
+ *
+ * @param Drupal\Core\Entity\EntityInterface $entity
+ *   The node being saved.
+ */
+function asymmetric_translations_node_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  $event_dispatcher = \Drupal::service('event_dispatcher');
+  $event_dispatcher->dispatch(new Event\NodeSavedEvent($entity, $entity->language()), Event\NodeSavedEvent::EVENT_NAME);
+}
+
+/**
+ * Called when a paragraph is saved.
+ *
+ * @param Drupal\Core\Entity\EntityInterface $entity
+ *   The node being saved.
+ */
+function asymmetric_translations_paragraph_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  if (!$parent_entity = $entity->getParentEntity()) {
+    return;
+  }
+
+  while(!($parent_entity instanceof \Drupal\node\NodeInterface)) {
+    if (!$parent_entity = $parent_entity->getParentEntity()) {
+      return;
+    }
+  }
+
+  $event_dispatcher = \Drupal::service('event_dispatcher');
+  $event_dispatcher->dispatch(new Event\ParagraphSavedEvent($entity, $parent_entity->language()), Event\ParagraphSavedEvent::EVENT_NAME);
+}
+
+/**
+ * Called when a node is cloned.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The node being cloned.
+ */
+function asymmetric_translations_node_insert($node) {
+  if (isset($node->at_source_node)) {
+    $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+
+    if (!$ant = $storage->getTranslationEntityByNode($node->at_source_node)) {
+      $source_language_id = $node->at_source_node->getUntranslated()->language()->getId();
+      $ant = AsymmetricNodeTranslation::create(['langcode' => $source_language_id, 'node' => $node->at_source_node]);
+    }
+
+    $storage->addTranslation(\Drupal::languageManager()->getCurrentLanguage(), $ant, $node);
+
+    $ant->save();
+  }
+}
+
+/**
+ * Check if the node is the source-language of a translations object and if there are translations assigned to it.
+ * If so, prevent deletion by throwing an Exception
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $node
+ * @return void
+ * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+ * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+ */
+function asymmetric_translations_node_predelete(Drupal\Core\Entity\EntityInterface $node) {
+  $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+  if ($ant = $storage->getTranslationEntityByNode($node)) {
+
+    $source_language_id = $ant->getUntranslated()->language()->getId();
+    if ($node->language()->getId() !== $source_language_id) {
+      return; // All ok, we can delete this translation
+    }
+
+    // Since the translation of the node to be deleted is the source language, we can only delete it if there are no translations
+    foreach(\Drupal::languageManager()->getLanguages() as $language) {
+      if ($language->getId() === $source_language_id) {
+        continue;
+      }
+
+      if ($ant->hasTranslation($language->getId())) {
+        $ant_translation = $ant->getTranslation($node->language()->getId());
+        if ($ant_translation->referencedEntities()) {
+          throw new \Exception('This node cannot be deleted, because this is the source-node and there are translations assigned to it. Delete or decouple the translations first.');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Try to delete ant-translation
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $node
+ * @return void
+ * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+ * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+ */
+function asymmetric_translations_node_delete(Drupal\Core\Entity\EntityInterface $node) {
+  $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+  if ($ant = $storage->getTranslationEntityByNode($node)) {
+    if ($ant->getUntranslated()->language()->getId() === $node->language()->getId()) {
+      $ant->delete();
+      return;
+    }
+
+    if ($ant->hasTranslation($node->language()->getId())) {
+      $ant->removeTranslation($node->language()->getId());
+      $ant->save();
+    }
+  }
+}
