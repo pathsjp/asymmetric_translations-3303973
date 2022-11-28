@@ -150,7 +150,6 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $has_violations = FALSE;
     $has_translations = FALSE;
 
     if (!$this->current_ant) {
@@ -204,7 +203,9 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
       return;
     }
 
-    if (!$has_violations) {
+    $violations = $this->current_ant->validate();
+
+    if (!count($violations)) {
       $this->current_ant->save();
       \Drupal::messenger()->addMessage('Saved succesfully');
     }
