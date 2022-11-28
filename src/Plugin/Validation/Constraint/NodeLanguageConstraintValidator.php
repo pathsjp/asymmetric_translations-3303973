@@ -13,29 +13,35 @@ class NodeLanguageConstraintValidator extends ConstraintValidator {
 
   /**
    * {@inheritdoc}
+   *
+   * Validate that the language of the selected node is equal to the language of the assymmetric node translation currently being set.
    */
-  public function validate($entity, Constraint $constraint) {
-    if (!isset($entity)) {
+  public function validate($ant, Constraint $constraint) {
+    if (!isset($ant)) {
       return;
     }
 
+    // Check each available language
     foreach(\Drupal::languageManager()->getLanguages() as $language) {
-      if (!$entity->hasTranslation($language->getId())) {
+      // If the ANT doesn't have a translation in a specific language, we don't have to check it
+      if (!$ant->hasTranslation($language->getId())) {
         continue;
       }
 
-      $translation = $entity->getTranslation($language->getId());
+      // Load the translation of the ANT
+      $ant_translation = $ant->getTranslation($language->getId());
 
-      if (!$nid = $translation->node->target_id) {
+      // Fetch the linked NID and load the Node
+      if (!$nid = $ant_translation->node->target_id) {
         continue;
       }
       if (!$node = Node::load($nid)) {
         continue;
       }
 
-      // Validate
-      if ($node->language()->getId() !== $translation->language()->getId()) {
-        $this->context->addViolation($constraint->generateMessage($node, $translation->language()));
+      // Validate that the language of the linked Node is equal to the language of the ANT translation
+      if ($node->language()->getId() !== $ant_translation->language()->getId()) {
+        $this->context->addViolation($constraint->generateMessage($node, $ant_translation->language()));
       }
     }
   }

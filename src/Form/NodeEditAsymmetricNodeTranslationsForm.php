@@ -165,8 +165,21 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
         continue;
       }
 
+      // Fetch the array of submitted translations; only formerly "empty" translations can be submitted
+      $submitted_translations = $form_state->getValue('translations');
+
+      // If the current language ID doesn't exist in the submitted translations, it wasn't editable
+      if (!isset($submitted_translations[$language->getId()])) {
+        // If the current language wasn't submitted, we expect that the ANT already has a translation in that language
+        if ($this->current_ant->hasTranslation($language->getId())) {
+          $has_translations = TRUE;
+        }
+
+        continue;
+      }
+
       // If the value for a certain language is empty, remove the translation
-      if (!$nid = $form_state->getValue(['translations', $language->getId(), 'translation'])) {
+      if (!$nid = $submitted_translations[$language->getId()]['translation']) {
         if ($this->current_ant->hasTranslation($language->getId())) {
           $this->current_ant->removeTranslation($language->getId());
         }
@@ -182,7 +195,7 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
 
       $has_translations = TRUE;
 
-      $storage->addTranslation(\Drupal::languageManager()->getCurrentLanguage(), $this->current_ant, $referenced_node);
+      $storage->addTranslation($language, $this->current_ant, $referenced_node);
     }
 
     if (!$has_translations) {
@@ -210,6 +223,11 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
     $entities = $ant_translation->node->referencedEntities();
 
     $node = reset($entities);
+
+    // If the ANT was somehow linked to an incorrect language, or the language of the node has changed, return nothing
+    if (!$node->hasTranslation($language->getId())) {
+      return NULL;
+    }
 
     return $node->getTranslation($language->getId());
   }
