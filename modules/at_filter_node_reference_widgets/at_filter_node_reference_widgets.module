@@ -2,32 +2,27 @@
 
 /**
  * Implements hook_field_widget_form_alter().
- * TODO: Also automate this process for node reference fields (currently done by hand)
  */
 function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
-  $widget_type = $context['widget']->getPluginId();
-  if ($widget_type !== 'link_default' && $widget_type !== 'link_attributes' && $widget_type !== 'link_target_field_widget') {
-    return;
-  }
+  $selection_settings = [
+    'view' => [
+      'view_name' => 'entity_reference_by_language',
+      'display_name' => 'all',
+    ],
+  ];
 
-  $fieldDefinitions = $context['items']->getFieldDefinition();
-  if (!$fieldDefinitions) {
-    return;
-  }
+  // Node reference fields
+  if (isset($element['target_id']['#target_type']) && $element['target_id']['#target_type'] === 'node') {
+    if (!isset($element['target_id']['#selection_handler']) || $element['target_id']['#selection_handler'] === 'default:node') {
+      $element['target_id']['#selection_handler'] = 'views';
+      $element['target_id']['#selection_settings'] = $selection_settings;
+    }
 
-  if (!isset($element['uri']['#target_type'])) {
-    return;
-  }
-
-  if ($element['uri']['#target_type'] === 'node') {
-    $element['uri']['#selection_handler'] = 'views';
-    $element['uri']['#selection_settings'] = [
-      'view' => [
-        'view_name' => 'entity_reference_by_language',
-        'display_name' => 'all',
-      ],
-    ];
+    // Link fields
+  }elseif (isset($element['uri']['#target_type']) && $element['uri']['#target_type'] === 'node') {
+    if (!isset($element['uri']['#selection_handler']) || $element['uri']['#selection_handler'] === 'default:node') {
+      $element['uri']['#selection_handler'] = 'views';
+      $element['uri']['#selection_settings'] = $selection_settings;
+    }
   }
 }
-
-
