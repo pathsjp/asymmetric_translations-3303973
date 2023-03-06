@@ -88,13 +88,20 @@ class NodeEditAsymmetricNodeTranslationsForm extends FormBase {
         ];
 
         if (!$is_source_language) {
-          $links['delete'] = [
-            'title' => $this->t('Delete'),
-            'url' => Url::fromRoute('entity.node.delete_form', ['node' => $translation->id()], $link_options),
+          $row['translation'] = [
+            '#type'               => 'entity_autocomplete',
+            '#target_type'        => 'node',
+            '#title'              => $language->getName(),
+            '#title_display'      => 'invisible',
+            '#default_value'      => $translation,
+            '#selection_settings' => [
+            ],
+            '#weight'             => 20,
           ];
+        } else {
+          $row['translation'] = Link::fromTextAndUrl($translation->getTitle(), $translation->toUrl())->toRenderable();
         }
 
-        $row['translation'] = Link::fromTextAndUrl($translation->getTitle(), $translation->toUrl())->toRenderable();
         $row['status'] = ['#markup' => $translation->isPublished() ? $this->t('Published') : $this->t('Unpublished')];
         $row['operations'] = $operations;
 
