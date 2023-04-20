@@ -180,7 +180,7 @@ class AutoFixNodeReferences implements EventSubscriberInterface {
     $values = $field->getValue();
 
     foreach ($values as $vkey => $value) {
-      if (!isset($value['uri']) || false === preg_match('/^entity:node\/(\d+)$/', $value['uri'], $matches)) {
+      if (!isset($value['uri']) || !preg_match('/^entity:node\/(\d+)$/', $value['uri'], $matches)) {
         continue;
       }
 
