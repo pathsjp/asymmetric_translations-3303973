@@ -1,0 +1,8 @@
+services:
+  at_simple_sitemap_translations.language_manager:
+    class: Drupal\at_simple_sitemap_translations\AtSimpleSitemapLanguageManager
+    arguments: [ '@language_manager' ]
+
+  at_simple_sitemap_translations.url_alternatives_processor:
+    class: Drupal\at_simple_sitemap_translations\AtSimpleSitemapUrlAlternativesProcessor
+    arguments: [ '@entity_type.manager', '@at_simple_sitemap_translations.language_manager' ]

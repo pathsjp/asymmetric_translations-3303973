@@ -1,0 +1,19 @@
+<?php
+
+use Drupal\simple_sitemap\Entity\SimpleSitemapInterface;
+
+/**
+ * Add language alternatives for node links to the sitemap.
+ *
+ * @param array &$links
+ *   An array of sitemap links.
+ * @param \Drupal\simple_sitemap\Entity\SimpleSitemapInterface $sitemap
+ *   Sitemap entity.
+ */
+function at_simple_sitemap_translations_simple_sitemap_links_alter(array &$links, SimpleSitemapInterface $sitemap) {
+  $url_processor = \Drupal::service('at_simple_sitemap_translations.url_alternatives_processor');
+
+  foreach ($links as &$link) {
+    $url_processor->alterSitemapLink($link);
+  }
+}

@@ -1,0 +1,9 @@
+name: Asymmetric Translations - Simple Sitemap Translations
+type: module
+description: 'Adds Asymmetric Node Translation to the Simple Sitemap XML file'
+package: Asymmetric Translations
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - asymmetric_translations
+  - simple_sitemap:simple_sitemap
