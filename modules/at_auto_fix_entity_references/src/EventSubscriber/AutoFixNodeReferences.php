@@ -2,6 +2,7 @@
 
 namespace Drupal\at_auto_fix_entity_references\EventSubscriber;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Language\Language;
@@ -88,7 +89,7 @@ class AutoFixNodeReferences implements EventSubscriberInterface {
    * @return void
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  private function recursivelyFixNodeReferences(\Drupal\Core\Entity\EntityInterface $entity, Language $language, $recursive = TRUE) {
+  private function recursivelyFixNodeReferences(EntityInterface $entity, Language $language, $recursive = TRUE) {
     foreach ($entity->getFields() as $field_name => $field) {
       $type = $field->getFieldDefinition()->getType();
 

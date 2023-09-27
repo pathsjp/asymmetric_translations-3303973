@@ -2,6 +2,7 @@ name: Asymmetric Translations - Filter Node Reference Widgets
 type: module
 description: 'Filter node reference widgets by language.'
 package: Asymmetric Translations
-core_version_requirement: ^9.3 || ^10
+core: 8.x
+core_version_requirement: ^8 || ^9
 dependencies:
   - asymmetric_translations

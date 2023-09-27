@@ -1,12 +1,13 @@
 <?php
 
+use Drupal\node\NodeInterface;
 /**
  * Called when a node is cloned.
  *
  * @param \Drupal\node\NodeInterface $node
  *   The node being cloned.
  */
-function at_auto_fix_entity_references_cloned_node_alter(\Drupal\node\NodeInterface $node) {
+function at_auto_fix_entity_references_cloned_node_alter(NodeInterface $node) {
   if (!$language = \Drupal::request()->query->get('clone_for_translation')) {
     return;
   }

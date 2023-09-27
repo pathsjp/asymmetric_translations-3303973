@@ -2,6 +2,7 @@ name: Asymmetric Translations - Auto fix entity references
 type: module
 description: 'Tries to fix all (node) references in entity-reference, link and HTML fields for references that have an asymmetric translation in the language of the entity.'
 package: Asymmetric Translations
-core_version_requirement: ^9.3 || ^10
+core: 8.x
+core_version_requirement: ^8 || ^9
 dependencies:
   - asymmetric_translations

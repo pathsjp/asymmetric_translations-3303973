@@ -1,0 +1,254 @@
+diff --git a/asymmetric_translations.info.yml b/asymmetric_translations.info.yml
+index 92da34e..bec8951 100644
+--- a/asymmetric_translations.info.yml
++++ b/asymmetric_translations.info.yml
+@@ -2,8 +2,7 @@ name: Asymmetric Translations
+ type: module
+ description: 'Provides a asymmetric translation capabilities.'
+ package: Asymmetric Translations
+-core: 8.x
+-core_version_requirement: ^8 || ^9
++core_version_requirement: ^9.3 || ^10
+ dependencies:
+   - node
+   - content_translation
+diff --git a/asymmetric_translations.module b/asymmetric_translations.module
+index 846db82..21fd4d5 100644
+--- a/asymmetric_translations.module
++++ b/asymmetric_translations.module
+@@ -1,5 +1,11 @@
+ <?php
+ 
++use Drupal\Core\Url;
++use Drupal\node\NodeInterface;
++use Drupal\asymmetric_translations\Event\NodeClonedEvent;
++use Drupal\Core\Entity\EntityInterface;
++use Drupal\asymmetric_translations\Event\NodeSavedEvent;
++use Drupal\asymmetric_translations\Event\ParagraphSavedEvent;
+ use Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation;
+ use Drupal\asymmetric_translations\Event;
+ use Drupal\node\Entity\Node;
+@@ -14,7 +20,7 @@ function asymmetric_translations_entity_type_alter(array &$entity_types) {
+   $entity_types['node']->addConstraint('NodeAsymmetricTranslationLanguage');
+ }
+ 
+-function asymmetric_translations_language_switch_links_alter(array &$links, $type, \Drupal\Core\Url $url) {
++function asymmetric_translations_language_switch_links_alter(array &$links, $type, Url $url) {
+   if (!$node = \Drupal::routeMatch()->getParameter('node')) {
+     return;
+   }
+@@ -90,7 +96,7 @@ function asymmetric_translations_page_attachments_alter(array &$page) {
+  * @param \Drupal\node\NodeInterface $node
+  *   The node being cloned.
+  */
+-function asymmetric_translations_cloned_node_alter(\Drupal\node\NodeInterface $node) {
++function asymmetric_translations_cloned_node_alter(NodeInterface $node) {
+   if (!$language = \Drupal::request()->query->get('clone_for_translation')) {
+     return;
+   }
+@@ -99,7 +105,7 @@ function asymmetric_translations_cloned_node_alter(\Drupal\node\NodeInterface $n
+   $node->at_source_node = \Drupal::routeMatch()->getParameter('node');
+ 
+   $event_dispatcher = \Drupal::service('event_dispatcher');
+-  $event_dispatcher->dispatch(new Event\NodeClonedEvent($node, $node->language()), Event\NodeClonedEvent::EVENT_NAME);
++  $event_dispatcher->dispatch(new NodeClonedEvent($node, $node->language()), NodeClonedEvent::EVENT_NAME);
+ }
+ 
+ /**
+@@ -108,9 +114,9 @@ function asymmetric_translations_cloned_node_alter(\Drupal\node\NodeInterface $n
+  * @param Drupal\Core\Entity\EntityInterface $entity
+  *   The node being saved.
+  */
+-function asymmetric_translations_node_presave(Drupal\Core\Entity\EntityInterface $entity) {
++function asymmetric_translations_node_presave(EntityInterface $entity) {
+   $event_dispatcher = \Drupal::service('event_dispatcher');
+-  $event_dispatcher->dispatch(new Event\NodeSavedEvent($entity, $entity->language()), Event\NodeSavedEvent::EVENT_NAME);
++  $event_dispatcher->dispatch(new NodeSavedEvent($entity, $entity->language()), NodeSavedEvent::EVENT_NAME);
+ }
+ 
+ /**
+@@ -119,19 +125,19 @@ function asymmetric_translations_node_presave(Drupal\Core\Entity\EntityInterface
+  * @param Drupal\Core\Entity\EntityInterface $entity
+  *   The node being saved.
+  */
+-function asymmetric_translations_paragraph_presave(Drupal\Core\Entity\EntityInterface $entity) {
++function asymmetric_translations_paragraph_presave(EntityInterface $entity) {
+   if (!$parent_entity = $entity->getParentEntity()) {
+     return;
+   }
+ 
+-  while(!($parent_entity instanceof \Drupal\node\NodeInterface)) {
++  while(!($parent_entity instanceof NodeInterface)) {
+     if (!$parent_entity = $parent_entity->getParentEntity()) {
+       return;
+     }
+   }
+ 
+   $event_dispatcher = \Drupal::service('event_dispatcher');
+-  $event_dispatcher->dispatch(new Event\ParagraphSavedEvent($entity, $parent_entity->language()), Event\ParagraphSavedEvent::EVENT_NAME);
++  $event_dispatcher->dispatch(new ParagraphSavedEvent($entity, $parent_entity->language()), ParagraphSavedEvent::EVENT_NAME);
+ }
+ 
+ /**
+@@ -164,7 +170,7 @@ function asymmetric_translations_node_insert($node) {
+  * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+  * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+  */
+-function asymmetric_translations_node_predelete(Drupal\Core\Entity\EntityInterface $node) {
++function asymmetric_translations_node_predelete(EntityInterface $node) {
+   $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+   if ($ant = $storage->getTranslationEntityByNode($node)) {
+ 
+@@ -197,7 +203,7 @@ function asymmetric_translations_node_predelete(Drupal\Core\Entity\EntityInterfa
+  * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+  * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+  */
+-function asymmetric_translations_node_delete(Drupal\Core\Entity\EntityInterface $node) {
++function asymmetric_translations_node_delete(EntityInterface $node) {
+   $storage = \Drupal::entityTypeManager()->getStorage('asymmetric_node_translation');
+   if ($ant = $storage->getTranslationEntityByNode($node)) {
+     if ($ant->getUntranslated()->language()->getId() === $node->language()->getId()) {
+diff --git a/composer.json b/composer.json
+index 84557e9..2b1f7f0 100644
+--- a/composer.json
++++ b/composer.json
+@@ -17,7 +17,7 @@
+     "source": "https://git.drupalcode.org/project/asymmetric_translations"
+   },
+   "require": {
+-    "drupal/core": "^8.8 || ^9",
++    "drupal/core": "^9.3 || ^10",
+     "drupal/quick_node_clone": "^1.14"
+   }
+ }
+diff --git a/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.info.yml b/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.info.yml
+index f0fab94..abd5d5f 100644
+--- a/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.info.yml
++++ b/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.info.yml
+@@ -2,8 +2,7 @@ name: Asymmetric Translations - Auto fix entity references
+ type: module
+ description: 'Tries to fix all (node) references in entity-reference, link and HTML fields for references that have an asymmetric translation in the language of the entity.'
+ package: Asymmetric Translations
+-core: 8.x
+-core_version_requirement: ^8 || ^9
++core_version_requirement: ^9.3 || ^10
+ dependencies:
+   - asymmetric_translations
+ 
+diff --git a/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.module b/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.module
+index 946b6a8..dc2c89f 100644
+--- a/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.module
++++ b/modules/at_auto_fix_entity_references/at_auto_fix_entity_references.module
+@@ -1,12 +1,13 @@
+ <?php
+ 
++use Drupal\node\NodeInterface;
+ /**
+  * Called when a node is cloned.
+  *
+  * @param \Drupal\node\NodeInterface $node
+  *   The node being cloned.
+  */
+-function at_auto_fix_entity_references_cloned_node_alter(\Drupal\node\NodeInterface $node) {
++function at_auto_fix_entity_references_cloned_node_alter(NodeInterface $node) {
+   if (!$language = \Drupal::request()->query->get('clone_for_translation')) {
+     return;
+   }
+diff --git a/modules/at_auto_fix_entity_references/src/EventSubscriber/AutoFixNodeReferences.php b/modules/at_auto_fix_entity_references/src/EventSubscriber/AutoFixNodeReferences.php
+index e65f03b..eff5527 100644
+--- a/modules/at_auto_fix_entity_references/src/EventSubscriber/AutoFixNodeReferences.php
++++ b/modules/at_auto_fix_entity_references/src/EventSubscriber/AutoFixNodeReferences.php
+@@ -2,6 +2,7 @@
+ 
+ namespace Drupal\at_auto_fix_entity_references\EventSubscriber;
+ 
++use Drupal\Core\Entity\EntityInterface;
+ use Drupal\asymmetric_translations\Entity\AsymmetricNodeTranslation;
+ use Drupal\Component\Utility\Html;
+ use Drupal\Core\Language\Language;
+@@ -88,7 +89,7 @@ class AutoFixNodeReferences implements EventSubscriberInterface {
+    * @return void
+    * @throws \Drupal\Core\Entity\EntityStorageException
+    */
+-  private function recursivelyFixNodeReferences(\Drupal\Core\Entity\EntityInterface $entity, Language $language, $recursive = TRUE) {
++  private function recursivelyFixNodeReferences(EntityInterface $entity, Language $language, $recursive = TRUE) {
+     foreach ($entity->getFields() as $field_name => $field) {
+       $type = $field->getFieldDefinition()->getType();
+ 
+diff --git a/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.info.yml b/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.info.yml
+index 551c07d..ff2f8c7 100644
+--- a/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.info.yml
++++ b/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.info.yml
+@@ -2,8 +2,7 @@ name: Asymmetric Translations - Filter Node Reference Widgets
+ type: module
+ description: 'Filter node reference widgets by language.'
+ package: Asymmetric Translations
+-core: 8.x
+-core_version_requirement: ^8 || ^9
++core_version_requirement: ^9.3 || ^10
+ dependencies:
+   - asymmetric_translations
+ 
+diff --git a/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module b/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module
+index 8203f0e..29f2954 100644
+--- a/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module
++++ b/modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module
+@@ -1,11 +1,12 @@
+ <?php
+ 
++use Drupal\Core\Form\FormStateInterface;
+ /**
+  * Implements hook_field_widget_form_alter().
+  * TODO: Also automate this process for node reference fields (currently done by hand)
+  * TODO: Add the entity_reference_by_language view config to the installation of this module
+  */
+-function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
++function at_filter_node_reference_widgets_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
+   $widget_type = $context['widget']->getPluginId();
+   if ($widget_type !== 'link_default' && $widget_type !== 'link_attributes' && $widget_type !== 'link_target_field_widget') {
+     return;
+@@ -30,5 +31,3 @@ function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Dr
+     ];
+   }
+ }
+-
+-
+diff --git a/modules/at_frontpage_per_language/at_frontpage_per_language.info.yml b/modules/at_frontpage_per_language/at_frontpage_per_language.info.yml
+index e661d36..baf9741 100644
+--- a/modules/at_frontpage_per_language/at_frontpage_per_language.info.yml
++++ b/modules/at_frontpage_per_language/at_frontpage_per_language.info.yml
+@@ -2,8 +2,7 @@ name: Asymmetric Translations - Frontpage Per Language
+ type: module
+ description: 'Alters the front page node reference field into a label field so that it is language specific.'
+ package: Asymmetric Translations
+-core: 8.x
+-core_version_requirement: ^8 || ^9
++core_version_requirement: ^9.3 || ^10
+ dependencies:
+   - asymmetric_translations
+ 
+diff --git a/src/AsymmetricNodeTranslationListBuilder.php b/src/AsymmetricNodeTranslationListBuilder.php
+index 56a01cf..0cb1b5a 100644
+--- a/src/AsymmetricNodeTranslationListBuilder.php
++++ b/src/AsymmetricNodeTranslationListBuilder.php
+@@ -68,6 +68,7 @@ class AsymmetricNodeTranslationListBuilder extends EntityListBuilder {
+     $total = $this->getStorage()
+       ->getQuery()
+       ->count()
++      ->accessCheck(FALSE)
+       ->execute();
+ 
+     $build['summary']['#markup'] = $this->t('Total asymmetric node translations: @total', ['@total' => $total]);
+diff --git a/src/Form/AsymmetricNodeTranslationForm.php b/src/Form/AsymmetricNodeTranslationForm.php
+index a28b0c2..0f406a1 100644
+--- a/src/Form/AsymmetricNodeTranslationForm.php
++++ b/src/Form/AsymmetricNodeTranslationForm.php
+@@ -20,7 +20,7 @@ class AsymmetricNodeTranslationForm extends ContentEntityForm {
+     $link = $entity->toLink($this->t('View'))->toRenderable();
+ 
+     $message_arguments = ['%label' => $this->entity->label()];
+-    $logger_arguments = $message_arguments + ['link' => render($link)];
++    $logger_arguments = $message_arguments + ['link' => \Drupal::service('renderer')->render($link)];
+ 
+     if ($result == SAVED_NEW) {
+       $this->messenger()->addStatus($this->t('New asymmetric node translation %label has been created.', $message_arguments));

@@ -17,7 +17,7 @@
     "source": "https://git.drupalcode.org/project/asymmetric_translations"
   },
   "require": {
-    "drupal/core": "^8.8 || ^9",
+    "drupal/core": "^9.3 || ^10",
     "drupal/quick_node_clone": "^1.14"
   }
 }

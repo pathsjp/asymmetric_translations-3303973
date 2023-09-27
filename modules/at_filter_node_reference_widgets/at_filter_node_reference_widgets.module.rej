@@ -1,0 +1,22 @@
+--- modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module
++++ modules/at_filter_node_reference_widgets/at_filter_node_reference_widgets.module
+@@ -1,11 +1,12 @@
+ <?php
+ 
++use Drupal\Core\Form\FormStateInterface;
+ /**
+  * Implements hook_field_widget_form_alter().
+  * TODO: Also automate this process for node reference fields (currently done by hand)
+  * TODO: Add the entity_reference_by_language view config to the installation of this module
+  */
+-function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
++function at_filter_node_reference_widgets_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
+   $widget_type = $context['widget']->getPluginId();
+   if ($widget_type !== 'link_default' && $widget_type !== 'link_attributes' && $widget_type !== 'link_target_field_widget') {
+     return;
+@@ -30,5 +31,3 @@ function at_filter_node_reference_widgets_field_widget_form_alter(&$element, \Dr
+     ];
+   }
+ }
+-
+-

@@ -68,6 +68,7 @@ class AsymmetricNodeTranslationListBuilder extends EntityListBuilder {
     $total = $this->getStorage()
       ->getQuery()
       ->count()
+      ->accessCheck(FALSE)
       ->execute();
 
     $build['summary']['#markup'] = $this->t('Total asymmetric node translations: @total', ['@total' => $total]);
