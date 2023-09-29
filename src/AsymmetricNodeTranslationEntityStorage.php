@@ -22,6 +22,7 @@ class AsymmetricNodeTranslationEntityStorage extends SqlContentEntityStorage imp
   public function getTranslationEntitiesByNode(Node $node) {
     // Note that we explicity not filter by language here, because we want to be able to find any translation
     $results = \Drupal::entityQuery('asymmetric_node_translation')
+      ->accessCheck(FALSE)
       ->condition('node', $node->id())
       ->execute();
 

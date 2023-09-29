@@ -131,6 +131,7 @@ class AutoFixNodeReferences implements EventSubscriberInterface {
 
   private function getNodeTranslation($nid, Language $language) {
     $query = \Drupal::entityQuery('asymmetric_node_translation')
+                    ->accessCheck(FALSE)
                     ->condition('node', $nid);
 
     if (!$ant_results = $query->execute()) {
